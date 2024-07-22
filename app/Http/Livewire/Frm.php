@@ -3,46 +3,57 @@
 namespace App\Http\Livewire;
 
 use Livewire\Component;
-use App\Models\User;
+use App\Models\DatosTrabajador;
+use App\Models\TareaDB;
 
-class Frm extends Component
+class FRM extends Component
 {
-    public $name;
-    public $password;
-    public $email;
-    
+    public $nombre;
+    public $horasTrabajo;
+    public $tareaAsignada;
+    public $numCedula;
+    public $tareas;
+    public $errorMessage;
+
     protected $rules = [
-        'name' => 'required|min:3',
-        'email' => 'required|email',
-        'password' => 'required|min:3'
+        'nombre' => 'required|min:3',
+        'horasTrabajo' => 'required|numeric',
+        'numCedula' => 'required|max:10 ',
+        'tareaAsignada' => 'required|exists:tareasDB,id'
     ];
 
-    public function clear(){
-        $this->name = '';
-        $this->email = '';
-        $this->password = '';
+    public function mount()
+    {
+        $this->tareas = TareaDB::all();
     }
 
     public function submit()
     {
-        // Execution doesn't reach here if validation fails.
-        $this->validate();
-        
-        User::create([
-            'name' => $this->name,
-            'email' => $this->email,
-            'password' => bcrypt($this->password) // Recuerda encriptar la contraseña
-        ]);
+        $this->errorMessage = ''; // Limpiar mensaje de error
 
-        // Clear the input fields after saving
-        $this->clear();
+        try {
+            $this->validate();
 
-        // Emit an event to refresh the user table
-        $this->emit('userAdded');
+            DatosTrabajador::create([
+                'nombre' => $this->nombre,
+                'horasTrabajo' => $this->horasTrabajo,
+                'tareaAsignada' => $this->tareaAsignada,
+                'numCedula' => $this->numCedula
+            ]);
+
+            $this->emit('trabajadorAgregado');
+            $this->reset();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->errorMessage = 'Error de validación: ' . $e->getMessage();
+        } catch (\Exception $e) {
+            $this->errorMessage = 'Hubo un error al agregar el trabajador: ' . $e->getMessage();
+        }
     }
 
     public function render()
     {
+        // Actualiza $tareas antes de renderizar la vista
+        $this->tareas = TareaDB::all();
         return view('livewire.frm');
     }
 }

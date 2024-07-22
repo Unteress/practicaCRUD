@@ -3,25 +3,47 @@
 namespace App\Http\Livewire;
 
 use Livewire\Component;
-use App\Models\User;
+use App\Models\DatosTrabajador;
+use App\Models\TareaDB;
 
 class EditPersona extends Component
 {
     public $userId;
-    public $name;
-    public $email;
-    public $password;
-    public $mostrarFormulario = false; // Variable para controlar la visibilidad del formulario
+    public $nombre;
+    public $horasTrabajo;
+    public $tareaAsignada;
+    public $numCedula;
+    public $mostrarFormulario = false;
+    public $tareas;
+
+    protected $rules = [
+        'nombre' => 'required|min:3',
+        'horasTrabajo' => 'required|numeric',
+        'numCedula' => 'required|unique:datosTrabajador,numCedula,' . 'id',
+        'tareaAsignada' => 'required|exists:tareasDB,id'
+    ];
 
     public function mount($userId)
     {
         $this->userId = $userId;
-        $user = User::find($userId);
-        if ($user) {
-            $this->name = $user->name;
-            $this->email = $user->email;
-            $this->password = $user->password;
+        $this->loadTrabajador();
+        $this->loadTareas();
+    }
+
+    public function loadTrabajador()
+    {
+        $trabajador = DatosTrabajador::find($this->userId);
+        if ($trabajador) {
+            $this->nombre = $trabajador->nombre;
+            $this->horasTrabajo = $trabajador->horasTrabajo;
+            $this->numCedula = $trabajador->numCedula;
+            $this->tareaAsignada = $trabajador->tareaAsignada;
         }
+    }
+
+    public function loadTareas()
+    {
+        $this->tareas = TareaDB::all();
     }
 
     public function mostrarFormulario()
@@ -31,21 +53,22 @@ class EditPersona extends Component
 
     public function actualizar()
     {
-        $this->validate([
-            'name' => 'required|min:3',
-            'email' => 'required|email',
-            'password' => 'required|min:3'
-        ]);
+        $this->validate();
 
-        $user = User::find($this->userId);
-        if ($user) {
-            $user->update([
-                'name' => $this->name,
-                'email' => $this->email,
-                'password' => bcrypt($this->password)
+        $trabajador = DatosTrabajador::find($this->userId);
+
+        if ($trabajador) {
+            $trabajador->update([
+                'nombre' => $this->nombre,
+                'horasTrabajo' => $this->horasTrabajo,
+                'numCedula' => $this->numCedula,
+                'tareaAsignada' => $this->tareaAsignada
             ]);
-            $this->emit('usuarioActualizado');
+
+            $this->emit('trabajadorActualizado');
             $this->mostrarFormulario = false; // Ocultar el formulario después de actualizar
+        } else {
+            $this->emit('errorActualizacion', 'Trabajador no encontrado.');
         }
     }
 
@@ -53,4 +76,6 @@ class EditPersona extends Component
     {
         return view('livewire.edit-persona');
     }
+
+    protected $listeners = ['tareaCreada' => 'loadTareas']; // Escuchar el evento para actualizar tareas
 }

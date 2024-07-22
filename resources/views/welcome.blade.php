@@ -13,13 +13,15 @@
 
 
     <div class="container-sm">
-        
+    <livewire:agregar-tarea/>   
+    <h1><hr></h1>
     <livewire:frm/>
+    <h1><hr></h1>
     <livewire:table-persona/>   
     </div>
     @livewireScripts
-  
-    
     
 </body>
 </html>
+
+

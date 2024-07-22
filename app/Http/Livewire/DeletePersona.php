@@ -3,24 +3,32 @@
 namespace App\Http\Livewire;
 
 use Livewire\Component;
-use App\Models\User;
+use App\Models\DatosTrabajador;
 
 class DeletePersona extends Component
 {
     public $userId;
+    public $confirming = false;
 
     public function mount($userId)
     {
         $this->userId = $userId;
     }
 
-    public function eliminar()
+    public function confirmDelete()
     {
-        $user = User::find($this->userId);
-        if ($user) {
-            $user->delete();
-            $this->emit('usuarioEliminado'); // Emitir evento para actualizar la tabla
-        }
+        $this->confirming = true;
+    }
+
+    public function delete()
+    {
+        DatosTrabajador::find($this->userId)->delete();
+
+        // Emitir un evento para notificar a otros componentes
+        $this->emit('trabajadorEliminado');
+
+        // Restablecer estado
+        $this->confirming = false;
     }
 
     public function render()
